@@ -203,6 +203,7 @@ class Env:
 
         # Read env file and create hash.
         env_file = self.file
+        print(env_file)
         tmp_file = None
 
         url_scheme, *_ = urlparse(env_file)
@@ -310,8 +311,8 @@ class Env:
                             "env",
                             "create",
                             "--quiet",
-                            "--file '{}'".format(target_env_file),
-                            "--prefix '{}'".format(env_path),
+                            '--file "{}"'.format(target_env_file),
+                            '--prefix "{}"'.format(env_path),
                         ]
                     )
                     if self._container_img:
@@ -321,6 +322,7 @@ class Env:
                             args=self._singularity_args,
                             envvars=self.get_singularity_envvars(),
                         )
+                    print(cmd)
                     out = shell.check_output(
                         cmd, stderr=subprocess.STDOUT, universal_newlines=True
                     )
@@ -460,11 +462,18 @@ class Conda:
         return self.info["conda_prefix"]
 
     def bin_path(self):
-        return os.path.join(self.prefix_path(), "bin")
+        if ON_WINDOWS:
+            return os.path.join(self.prefix_path(), "condabin")
+        else:
+            return os.path.join(self.prefix_path(), "bin")
 
     def shellcmd(self, env_path, cmd):
         from snakemake.shell import shell
 
         # get path to activate script
         activate = os.path.join(self.bin_path(), "activate")
-        return "source {} '{}'; {}".format(activate, env_path, cmd)
+        if ON_WINDOWS:
+            print('{} "{}"& {}'.format(activate, env_path, cmd))
+            return '{} "{}"& {}'.format(activate, env_path, cmd)
+        else:
+            return "source {} '{}'; {}".format(activate, env_path, cmd)
